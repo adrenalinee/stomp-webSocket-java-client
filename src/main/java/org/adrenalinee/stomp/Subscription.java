@@ -1,5 +1,7 @@
 package org.adrenalinee.stomp;
 
+import org.adrenalinee.stomp.listener.SubscribeListener;
+
 /**
  * 
  * @author 신동성
@@ -11,7 +13,7 @@ public class Subscription {
 	
 	private String destination;
 	
-	SubscriptionListener listener;
+	SubscribeListener listener;
 
 	public String getId() {
 		return id;
@@ -29,11 +31,11 @@ public class Subscription {
 		this.destination = destination;
 	}
 
-	public SubscriptionListener getListener() {
+	public SubscribeListener getListener() {
 		return listener;
 	}
 
-	public void setListener(SubscriptionListener listener) {
+	public void setListener(SubscribeListener listener) {
 		this.listener = listener;
 	}
 	

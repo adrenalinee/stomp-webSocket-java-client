@@ -13,7 +13,7 @@ public class Connection {
 	private Map<String,String> headers;
 	
 	private int connecttimeout = 30;
-
+	
 	public Connection(String url, Map<String,String> headers) {
 		this.url = url;
 		this.headers = headers;

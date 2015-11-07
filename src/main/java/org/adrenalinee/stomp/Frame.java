@@ -22,6 +22,8 @@ public class Frame {
 	
 	private String body;
 	
+	private StompClient stompClient;
+	
 	Frame(Command command, Map<String, String> headers, String body) {
 		this.command = command;
 		this.headers = new LinkedHashMap<String, String>();
@@ -68,7 +70,27 @@ public class Frame {
 		
 		return new Frame(command, headers, body);
 	}
-
+	
+	
+	public void ack() {
+		if (stompClient == null) {
+			throw new RuntimeException();
+		}
+		String messageID = headers.get("message-id");
+		String subscription = headers.get("subscription");
+		stompClient.ack(messageID, subscription, headers);
+	}
+	
+	public void nack() {
+		if (stompClient == null) {
+			throw new RuntimeException();
+		}
+		String messageID = headers.get("message-id");
+		String subscription = headers.get("subscription");
+		stompClient.nack(messageID, subscription, headers);
+	}
+	
+	
 	public Command getCommand() {
 		return command;
 	}
@@ -91,6 +113,10 @@ public class Frame {
 
 	public void setBody(String body) {
 		this.body = body;
+	}
+
+	void setStompClient(StompClient stompClient) {
+		this.stompClient = stompClient;
 	}
 
 }
