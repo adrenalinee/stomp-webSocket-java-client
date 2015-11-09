@@ -158,7 +158,7 @@ public class StompClient {
 					setupHeartbeat(frame.getHeaders());
 					if (connectionLintener != null) {
 						try {
-							connectionLintener.onConnect();
+							connectionLintener.onConnect(frame);
 						} catch (Exception e) {
 							logger.error("onConnect error url: " + url, e);
 						}

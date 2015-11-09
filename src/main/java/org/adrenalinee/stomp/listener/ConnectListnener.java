@@ -1,5 +1,7 @@
 package org.adrenalinee.stomp.listener;
 
+import org.adrenalinee.stomp.Frame;
+
 /**
  * 
  * @author 신동성
@@ -7,5 +9,5 @@ package org.adrenalinee.stomp.listener;
  */
 public interface ConnectListnener {
 	
-	void onConnect();
+	void onConnect(Frame frame);
 }
