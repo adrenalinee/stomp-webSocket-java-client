@@ -9,5 +9,5 @@ import org.adrenalinee.stomp.Frame;
  */
 public interface SubscribeListener {
 	
-	void onMessage(Frame frame);
+	void onMessage(final Frame frame);
 }

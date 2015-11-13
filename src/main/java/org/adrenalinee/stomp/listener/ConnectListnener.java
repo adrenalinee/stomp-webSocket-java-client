@@ -9,5 +9,5 @@ import org.adrenalinee.stomp.Frame;
  */
 public interface ConnectListnener {
 	
-	void onConnect(Frame frame);
+	void onConnect(final Frame frame);
 }

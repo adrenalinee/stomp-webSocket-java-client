@@ -56,9 +56,9 @@ public class StompClient {
 		
 	}
 	
-	public static StompClient clientOverWebsocket(String url, Map<String,String> headers) {
+	public static StompClient clientOverWebsocket(String url, HttpHeaders httpHeaders) {
 		StompClient stompClient = new StompClient();
-		stompClient.connection = new Connection(url, headers);
+		stompClient.connection = new Connection(url, httpHeaders.getHeaders());
 		return stompClient;
 	}
 	
@@ -77,8 +77,8 @@ public class StompClient {
 		
 	}
 	
-	private void setupHeartbeat(Map<String, String> headers) {
-		String heartbeatValue = headers.get("heart-beat");
+	private void setupHeartbeat(StompHeaders headers) {
+		String heartbeatValue = headers.getHeartBeat();
 		String[] heartbeats = heartbeatValue.split(",");
 		int serverOutgoing = Integer.parseInt(heartbeats[0]);
 		int serverIncoming = Integer.parseInt(heartbeats[1]);
@@ -127,6 +127,11 @@ public class StompClient {
 //		
 //	}
 	
+	
+	public void connect(final ConnectListnener connectionLintener) {
+		connect(connectionLintener, null);
+	}
+	
 	public void connect(final ConnectListnener connectionLintener, final ErrorListener errorListener) {
 		logger.info("Opening Web Socket...");
 		
@@ -170,7 +175,7 @@ public class StompClient {
 						return;
 					}
 					
-					String subscription = frame.getHeaders().get("subscription");
+					String subscription = frame.getHeaders().getSubscription();
 					frame.setStompClient(StompClient.this);
 					SubscribeListener subscriptionListener = subscriptions.get(subscription).getListener();
 					if (connectionLintener != null) {
@@ -239,14 +244,18 @@ public class StompClient {
 		connected = false;
 	}
 	
-	public void send(String destination, Map<String, String> headers, String body) {
-		Map<String, String> realHeader = new TreeMap<String, String>();
-		realHeader.put("destination", destination);
-		if (headers != null) {
-			realHeader.putAll(headers);
+	public void send(String destination, String body) {
+		send(destination, null, body);
+	}
+	
+	public void send(String destination, StompHeaders stompHeaders, String body) {
+		Map<String, String> header = new TreeMap<String, String>();
+		header.put("destination", destination);
+		if (stompHeaders != null) {
+			header.putAll(stompHeaders.getHeaders());
 		}
 		
-		transmit(Command.SEND, realHeader, body);
+		transmit(Command.SEND, header, body);
 	}
 	
 	public void subscribe(String destination, SubscribeListener listener) {
@@ -309,22 +318,20 @@ public class StompClient {
 		transmit(Command.ABORT, headers, null);
 	}
 	
-	public void ack(String messageID, String subscription, Map<String, String> headers) {
-		Map<String, String> realHeader = new TreeMap<String, String>();
-		realHeader.putAll(headers);
-		realHeader.put("message-id", messageID);
-		realHeader.put("subscription", subscription);
+	public void ack(String messageID, String subscription, StompHeaders stompHeaders) {
+		Map<String, String> header = stompHeaders.getHeaders();
+		header.put("message-id", messageID);
+		header.put("subscription", subscription);
 		
-		transmit(Command.ACK, realHeader, null);
+		transmit(Command.ACK, header, null);
 	}
 	
-	public void nack(String messageID, String subscription, Map<String, String> headers) {
-		Map<String, String> realHeader = new TreeMap<String, String>();
-		realHeader.putAll(headers);
-		realHeader.put("message-id", messageID);
-		realHeader.put("subscription", subscription);
+	public void nack(String messageID, String subscription, StompHeaders stompHeaders) {
+		Map<String, String> header = stompHeaders.getHeaders();
+		header.put("message-id", messageID);
+		header.put("subscription", subscription);
 		
-		transmit(Command.NACK, realHeader, null);
+		transmit(Command.NACK, header, null);
 	}
 
 	public boolean isConnected() {

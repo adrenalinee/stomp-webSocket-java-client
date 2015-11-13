@@ -1,6 +1,5 @@
 package org.adrenalinee.stomp;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
@@ -18,7 +17,7 @@ public class Frame {
 	
 	private Command command;
 	
-	private Map<String, String> headers;
+	private StompHeaders headers;
 	
 	private String body;
 	
@@ -26,15 +25,15 @@ public class Frame {
 	
 	Frame(Command command, Map<String, String> headers, String body) {
 		this.command = command;
-		this.headers = new LinkedHashMap<String, String>();
-		this.headers.putAll(headers);
+		this.headers = new StompHeaders();
+//		this.headers.putAll(headers);
 		this.body = body;
 	}
 	
 	public String toString() {
 		StringBuffer sb = new StringBuffer(command.name()).append(LF);
 		
-		for (Entry<String, String> entry: headers.entrySet()) {
+		for (Entry<String, String> entry: headers.getHeaders().entrySet()) {
 			sb.append(entry.getKey())
 				.append(":")
 				.append(entry.getValue())
@@ -76,8 +75,8 @@ public class Frame {
 		if (stompClient == null) {
 			throw new RuntimeException();
 		}
-		String messageID = headers.get("message-id");
-		String subscription = headers.get("subscription");
+		String messageID = headers.getMessageId();
+		String subscription = headers.getSubscription();
 		stompClient.ack(messageID, subscription, headers);
 	}
 	
@@ -85,8 +84,8 @@ public class Frame {
 		if (stompClient == null) {
 			throw new RuntimeException();
 		}
-		String messageID = headers.get("message-id");
-		String subscription = headers.get("subscription");
+		String messageID = headers.getMessageId();
+		String subscription = headers.getSubscription();
 		stompClient.nack(messageID, subscription, headers);
 	}
 	
@@ -99,11 +98,11 @@ public class Frame {
 		this.command = command;
 	}
 
-	public Map<String, String> getHeaders() {
+	public StompHeaders getHeaders() {
 		return headers;
 	}
 
-	public void setHeaders(Map<String, String> headers) {
+	public void setHeaders(StompHeaders headers) {
 		this.headers = headers;
 	}
 
