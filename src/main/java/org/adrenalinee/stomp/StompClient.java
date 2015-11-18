@@ -133,8 +133,6 @@ public class StompClient {
 	}
 	
 	public void connect(final ConnectListnener connectionLintener, final ErrorListener errorListener) {
-		logger.info("Opening Web Socket...");
-		
 		final String url = connection.getUrl();
 		final Map<String, String> headers = connection.getHeaders();
 		final int connecttimeout =  connection.getConnecttimeout();
@@ -206,6 +204,7 @@ public class StompClient {
 			@Override
 			public void onClose(int code, String reason, boolean remote) {
 				logger.warn("Whoops! Lost connection to "  + connection.getUrl());
+				logger.warn("Lost connection reason is " + reason);
 				cleanUp();
 				if (disconnectListener != null) {
 					try {
@@ -224,6 +223,7 @@ public class StompClient {
 			
 		};
 		
+		logger.info("Opening Web Socket... url: {}" + url);
 		webSocketClient.connect();
 	}
 	

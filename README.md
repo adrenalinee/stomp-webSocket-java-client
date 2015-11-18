@@ -9,7 +9,7 @@
 
 
 # 개발 목표
-android app에서 사용가능한 STOMP over webSocket client 구현체를 만드는 것이 목표입니다.
+android application과 일반 java application에서 사용가능한 STOMP over webSocket client 구현체를 만드는 것이 목표입니다.
 
 
 
