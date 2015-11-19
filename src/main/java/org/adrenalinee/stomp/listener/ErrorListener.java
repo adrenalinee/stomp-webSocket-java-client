@@ -9,5 +9,5 @@ import org.adrenalinee.stomp.Frame;
  */
 public interface ErrorListener {
 	
-	void onError(Frame frame);
+	void onError(final Frame frame);
 }

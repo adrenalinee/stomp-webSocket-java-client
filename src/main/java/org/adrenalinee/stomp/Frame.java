@@ -11,9 +11,8 @@ import java.util.TreeMap;
  * @since 2015. 11. 6.
  */
 public class Frame {
-	
-	static final String LF = "\n";
-	static final String NULL = "\0";
+	public static final String LF = "\n";
+	public static final String NULL = "\0";
 	
 	private Command command;
 	
@@ -23,10 +22,18 @@ public class Frame {
 	
 	private StompClient stompClient;
 	
+	
 	Frame(Command command, Map<String, String> headers, String body) {
 		this.command = command;
 		this.headers = new StompHeaders();
 //		this.headers.putAll(headers);
+		
+		if (headers != null) {
+			for (String key: headers.keySet()) {
+				this.headers.addHeader(key, headers.get(key));
+			}
+		}
+		
 		this.body = body;
 	}
 	
@@ -57,7 +64,7 @@ public class Frame {
 		Map<String, String> headers = new TreeMap<String, String>();
 		while (st.hasMoreTokens()) {
 			String line = st.nextToken();
-			if ("".equals(line)) {
+			if ("".equals(line.trim())) {
 				break;
 			}
 			
@@ -65,7 +72,10 @@ public class Frame {
 			headers.put(header[0], header[1]);
 		}
 		
-		String body = st.nextToken();
+		String body = null;
+		if (st.hasMoreTokens()) {
+			body = st.nextToken();
+		}
 		
 		return new Frame(command, headers, body);
 	}

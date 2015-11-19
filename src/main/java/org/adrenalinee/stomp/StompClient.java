@@ -79,6 +79,10 @@ public class StompClient {
 	
 	private void setupHeartbeat(StompHeaders headers) {
 		String heartbeatValue = headers.getHeartBeat();
+		if (heartbeatValue == null || "".equals(heartbeatValue)) {
+			return;
+		}
+		
 		String[] heartbeats = heartbeatValue.split(",");
 		int serverOutgoing = Integer.parseInt(heartbeats[0]);
 		int serverIncoming = Integer.parseInt(heartbeats[1]);
@@ -137,7 +141,7 @@ public class StompClient {
 		final Map<String, String> headers = connection.getHeaders();
 		final int connecttimeout =  connection.getConnecttimeout();
 		
-		WebSocketClient webSocketClient = new WebSocketClient(URI.create(url), new Draft_17(), headers, connecttimeout) {
+		webSocketClient = new WebSocketClient(URI.create(url), new Draft_17(), headers, connecttimeout) {
 
 			@Override
 			public void onOpen(ServerHandshake handshakedata) {

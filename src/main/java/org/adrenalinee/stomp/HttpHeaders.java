@@ -21,7 +21,7 @@ public class HttpHeaders {
 	}
 	
 	public void setAuthorazation(String value) {
-		headers.put("Authorazation", value);
+		headers.put("Authorization", value);
 	}
 	
 	public Map<String, String> getHeaders() {
