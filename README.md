@@ -20,7 +20,23 @@ android application과 일반 java application에서 사용가능한 STOMP over 
 된 상태입니다. 단위 테스트와 서버와 실제 통신하는 테스트까지 진행한 이후에 0.1 버전을 만들 계획입니다.
 
 
-
-
+# 사용법
+javascript 버전과 마찬가지로 functional programing 방식으로 개발 할 수 있습니다.
+```java
+StompClient stompClient = StompClient.clientOverWebsocket("ws://localhost:8080/stomp");
+StompClient.connect(new ConnectListnener() {
+	@Override
+	public void onConnect(final Frame frame) {
+		stompClient.subscribe("/topic/service.path", new SubscribeListener() {
+			@Override
+			public void onMessage(final Frame frame) {
+				
+			}
+		});
+		
+		stompClient.send("/app/srvice.path", "service body");
+	}
+});
+```
 
 
