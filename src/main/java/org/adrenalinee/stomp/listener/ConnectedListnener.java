@@ -7,7 +7,7 @@ import org.adrenalinee.stomp.Frame;
  * @author 신동성
  * @since 2015. 11. 6.
  */
-public interface ConnectListnener {
+public interface ConnectedListnener {
 	
-	void onConnect(final Frame frame);
+	void onConnected(final Frame frame);
 }

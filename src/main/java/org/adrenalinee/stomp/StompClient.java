@@ -7,7 +7,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 
-import org.adrenalinee.stomp.listener.ConnectListnener;
+import org.adrenalinee.stomp.listener.ConnectedListnener;
 import org.adrenalinee.stomp.listener.DisconnectListener;
 import org.adrenalinee.stomp.listener.ErrorListener;
 import org.adrenalinee.stomp.listener.SubscribeListener;
@@ -52,8 +52,16 @@ public class StompClient {
 	
 	private long serverActivity;
 	
+	/**
+	 * StompClient instance create by clientOverWebsocket()
+	 */
 	private StompClient() {
 		
+	}
+	
+	
+	public static StompClient clientOverWebsocket(String url) {
+		return clientOverWebsocket(url, null);
 	}
 	
 	public static StompClient clientOverWebsocket(String url, HttpHeaders httpHeaders) {
@@ -132,11 +140,11 @@ public class StompClient {
 //	}
 	
 	
-	public void connect(final ConnectListnener connectionLintener) {
-		connect(connectionLintener, null);
+	public void connect(final ConnectedListnener connectedLintener) {
+		connect(connectedLintener, null);
 	}
 	
-	public void connect(final ConnectListnener connectionLintener, final ErrorListener errorListener) {
+	public void connect(final ConnectedListnener connectionLintener, final ErrorListener errorListener) {
 		final String url = connection.getUrl();
 		final Map<String, String> headers = connection.getHeaders();
 		final int connecttimeout =  connection.getConnecttimeout();
@@ -165,9 +173,9 @@ public class StompClient {
 					setupHeartbeat(frame.getHeaders());
 					if (connectionLintener != null) {
 						try {
-							connectionLintener.onConnect(frame);
+							connectionLintener.onConnected(frame);
 						} catch (Exception e) {
-							logger.error("onConnect error url: " + url, e);
+							logger.error("onConnected error url: " + url, e);
 						}
 					}
 				} else if (Command.MESSAGE.equals(frame.getCommand())) {
@@ -237,7 +245,7 @@ public class StompClient {
 		webSocketClient.close();
 	}
 	
-	public void cleanUp() {
+	private void cleanUp() {
 		if (pinger != null) {
 			pinger.cancel();
 		}
@@ -284,6 +292,7 @@ public class StompClient {
 	public void unsubscribe(String id) {
 		Subscription subscription = subscriptions.get(id);
 		if (subscription == null) {
+			logger.warn("not exist subscription id. id: {}", id);
 			//TODO 구독정보에 해당 키가 없음을 알림
 			return;
 		}
@@ -293,10 +302,10 @@ public class StompClient {
 	}
 	
 	private void unsubscribe(Subscription subscription) {
-		Map<String, String> realHeader = new TreeMap<String, String>();
-		realHeader.put("id", subscription.getId());
+		Map<String, String> header = new TreeMap<String, String>();
+		header.put("id", subscription.getId());
 		
-		transmit(Command.UNSUBSCRIBE, realHeader, null);
+		transmit(Command.UNSUBSCRIBE, header, null);
 	}
 	
 	public Transaction bigen() {
