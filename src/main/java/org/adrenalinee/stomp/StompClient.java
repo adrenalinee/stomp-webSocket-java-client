@@ -11,6 +11,8 @@ import org.adrenalinee.stomp.listener.ConnectedListnener;
 import org.adrenalinee.stomp.listener.DisconnectListener;
 import org.adrenalinee.stomp.listener.ErrorListener;
 import org.adrenalinee.stomp.listener.SubscribeListener;
+import org.adrenalinee.stomp.listener.WebScoketErrorListener;
+import org.adrenalinee.stomp.listener.WebSocketCloseListener;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
@@ -52,6 +54,13 @@ public class StompClient {
 	
 	private long serverActivity;
 	
+	private ErrorListener errorListener;
+	
+	private WebScoketErrorListener webScoketErrorListener;
+	
+	private WebSocketCloseListener webSocketCloseListener;
+	
+	
 	/**
 	 * StompClient instance create by clientOverWebsocket()
 	 */
@@ -82,7 +91,6 @@ public class StompClient {
 				break;
 			}
 		}
-		
 	}
 	
 	private void setupHeartbeat(StompHeaders headers) {
@@ -135,33 +143,24 @@ public class StompClient {
 		}
 	}
 	
-//	public void parseConnect() {
-//		
-//	}
-	
 	
 	public void connect(final ConnectedListnener connectedLintener) {
-		connect(connectedLintener, null);
-	}
-	
-	public void connect(final ConnectedListnener connectionLintener, final ErrorListener errorListener) {
 		final String url = connection.getUrl();
 		final Map<String, String> headers = connection.getHeaders();
 		final int connecttimeout =  connection.getConnecttimeout();
 		
 		webSocketClient = new WebSocketClient(URI.create(url), new Draft_17(), headers, connecttimeout) {
-
+			
 			@Override
 			public void onOpen(ServerHandshake handshakedata) {
 				logger.info("Web Socket Openned...");
 				
 				Map<String, String> messageHeader = new TreeMap<String, String>();
 				messageHeader.put("accept-version", "1.1,1.0");
-				messageHeader.put("heart-beat", "10000,10000");
+				messageHeader.put("heart-beat", heartbeat.getOutgoing() + "," + heartbeat.getIncoming());
 				transmit(Command.CONNECT, messageHeader, null);
-				
 			}
-
+			
 			@Override
 			public void onMessage(String message) {
 				logger.info("<<< {}", message);
@@ -171,12 +170,14 @@ public class StompClient {
 					
 					connected = true;
 					setupHeartbeat(frame.getHeaders());
-					if (connectionLintener != null) {
+					if (connectedLintener != null) {
 						try {
-							connectionLintener.onConnected(frame);
+							connectedLintener.onConnected(frame);
 						} catch (Exception e) {
 							logger.error("onConnected error url: " + url, e);
 						}
+					} else {
+						logger.warn("Unhandled received CONNECTED: " + frame);
 					}
 				} else if (Command.MESSAGE.equals(frame.getCommand())) {
 					serverActivity = System.currentTimeMillis();
@@ -188,11 +189,11 @@ public class StompClient {
 					String subscription = frame.getHeaders().getSubscription();
 					frame.setStompClient(StompClient.this);
 					SubscribeListener subscriptionListener = subscriptions.get(subscription).getListener();
-					if (connectionLintener != null) {
+					if (connectedLintener != null) {
 						try {
 							subscriptionListener.onMessage(frame);
 						} catch (Exception e) {
-							logger.error("onMessage error subscrition id: " + subscription, e);
+							logger.error("onReceived error subscrition id: " + subscription, e);
 						}
 					} else {
 						logger.warn("Unhandled received MESSAGE: " + frame);
@@ -206,33 +207,47 @@ public class StompClient {
 						} catch(Exception e) {
 							logger.error("onErrorCallback error frame: " + frame, e);
 						}
+					} else {
+						logger.warn("Unhandled received ERROR: " + frame);
 					}
 				} else {
 					logger.warn("Unhandled frame: " + frame);
 				}
-				
 			}
-
+			
 			@Override
 			public void onClose(int code, String reason, boolean remote) {
 				logger.warn("Whoops! Lost connection to "  + connection.getUrl());
-				logger.warn("Lost connection reason is " + reason);
+				
 				cleanUp();
-				if (disconnectListener != null) {
+				if (webSocketCloseListener != null) {
 					try {
-						disconnectListener.onDisconnect();
+						webSocketCloseListener.onClose(code, reason, remote);
 					} catch (Exception e) {
-						logger.error("onDisconnect error. url: " + connection.getUrl());
+						logger.error("webSocketCloseListener.onClose() code: " + code +
+								", reason: " + reason +
+								", remote: " + remote,
+								e);
 					}
+				} else {
+					logger.warn("Unhandled onClose event. code: {}, reason: {}, remote: {}", code, reason, remote);
 				}
 			}
-
+			
 			@Override
 			public void onError(Exception ex) {
 				logger.error("websocket error", ex);
-				
+				if (webScoketErrorListener != null) {
+					try {
+						webScoketErrorListener.onError(ex);
+					} catch (Exception e) {
+						logger.error("webScoketErrorListener.onError() ex: " + ex,
+								e);
+					}
+				} else {
+					logger.warn("Unhandled onError event. ex: {}", ex);
+				}
 			}
-			
 		};
 		
 		logger.info("Opening Web Socket... url: {}" + url);
@@ -261,13 +276,13 @@ public class StompClient {
 	}
 	
 	public void send(String destination, StompHeaders stompHeaders, String body) {
-		Map<String, String> header = new TreeMap<String, String>();
-		header.put("destination", destination);
+		Map<String, String> headers = new TreeMap<String, String>();
+		headers.put("destination", destination);
 		if (stompHeaders != null) {
-			header.putAll(stompHeaders.getHeaders());
+			headers.putAll(stompHeaders.getHeaders());
 		}
 		
-		transmit(Command.SEND, header, body);
+		transmit(Command.SEND, headers, body);
 	}
 	
 	public void subscribe(String destination, SubscribeListener listener) {
@@ -281,11 +296,11 @@ public class StompClient {
 	}
 	
 	private void subscribe(Subscription subscription) {
-		Map<String, String> realHeader = new TreeMap<String, String>();
-		realHeader.put("destination", subscription.getDestination());
-		realHeader.put("id", subscription.getId());
+		Map<String, String> headers = new TreeMap<String, String>();
+		headers.put("destination", subscription.getDestination());
+		headers.put("id", subscription.getId());
 		
-		transmit(Command.SUBSCRIBE, realHeader, null);
+		transmit(Command.SUBSCRIBE, headers, null);
 	}
 	
 	
@@ -302,10 +317,10 @@ public class StompClient {
 	}
 	
 	private void unsubscribe(Subscription subscription) {
-		Map<String, String> header = new TreeMap<String, String>();
-		header.put("id", subscription.getId());
+		Map<String, String> headers = new TreeMap<String, String>();
+		headers.put("id", subscription.getId());
 		
-		transmit(Command.UNSUBSCRIBE, header, null);
+		transmit(Command.UNSUBSCRIBE, headers, null);
 	}
 	
 	public Transaction bigen() {
@@ -332,23 +347,31 @@ public class StompClient {
 	}
 	
 	public void ack(String messageID, String subscription, StompHeaders stompHeaders) {
-		Map<String, String> header = stompHeaders.getHeaders();
-		header.put("message-id", messageID);
-		header.put("subscription", subscription);
+		Map<String, String> headers = stompHeaders.getHeaders();
+		headers.put("message-id", messageID);
+		headers.put("subscription", subscription);
 		
-		transmit(Command.ACK, header, null);
+		transmit(Command.ACK, headers, null);
 	}
 	
 	public void nack(String messageID, String subscription, StompHeaders stompHeaders) {
-		Map<String, String> header = stompHeaders.getHeaders();
-		header.put("message-id", messageID);
-		header.put("subscription", subscription);
+		Map<String, String> headers = stompHeaders.getHeaders();
+		headers.put("message-id", messageID);
+		headers.put("subscription", subscription);
 		
-		transmit(Command.NACK, header, null);
+		transmit(Command.NACK, headers, null);
 	}
 
 	public boolean isConnected() {
 		return connected;
+	}
+
+	public void setWebScoketErrorListener(WebScoketErrorListener webScoketErrorListener) {
+		this.webScoketErrorListener = webScoketErrorListener;
+	}
+
+	public void setWebSocketCloseListener(WebSocketCloseListener webSocketCloseListener) {
+		this.webSocketCloseListener = webSocketCloseListener;
 	}
 }
 

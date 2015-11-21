@@ -1,7 +1,7 @@
 package org.adrenalinee.stomp;
 
 /**
- * 
+ * STOMP client frames
  * @author shindongseong
  * @since 2015. 11. 6.
  */
