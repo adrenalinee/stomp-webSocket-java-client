@@ -24,7 +24,7 @@ android application과 일반 java application에서 사용가능한 STOMP over 
 javascript 버전과 마찬가지로 functional programing 방식으로 개발 할 수 있습니다.
 ```java
 StompClient stompClient = StompClient.clientOverWebsocket("ws://localhost:8080/stomp");
-StompClient.connect(new ConnectListnener() {
+stompClient.connect(new ConnectListnener() {
 	@Override
 	public void onConnect(final Frame frame) {
 		stompClient.subscribe("/topic/service.path", new SubscribeListener() {
