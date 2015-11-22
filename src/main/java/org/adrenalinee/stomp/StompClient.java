@@ -10,6 +10,7 @@ import java.util.TreeMap;
 import org.adrenalinee.stomp.listener.ConnectedListnener;
 import org.adrenalinee.stomp.listener.DisconnectListener;
 import org.adrenalinee.stomp.listener.ErrorListener;
+import org.adrenalinee.stomp.listener.ReceiptListener;
 import org.adrenalinee.stomp.listener.SubscribeListener;
 import org.adrenalinee.stomp.listener.WebScoketErrorListener;
 import org.adrenalinee.stomp.listener.WebSocketCloseListener;
@@ -55,6 +56,8 @@ public class StompClient {
 	private long serverActivity;
 	
 	private ErrorListener errorListener;
+	
+	private ReceiptListener receiptListener;
 	
 	private WebScoketErrorListener webScoketErrorListener;
 	
@@ -193,13 +196,21 @@ public class StompClient {
 						try {
 							subscriptionListener.onMessage(frame);
 						} catch (Exception e) {
-							logger.error("onReceived error subscrition id: " + subscription, e);
+							logger.error("onMessage error subscrition id: " + subscription, e);
 						}
 					} else {
 						logger.warn("Unhandled received MESSAGE: " + frame);
 					}
 				} else if (Command.RECEIPT.equals(frame.getCommand())) {
-					//TODO
+					if (receiptListener != null) {
+						try {
+							receiptListener.onReceipt(frame);
+						}catch (Exception e) {
+							logger.error("onReceipt error receitp id: " + frame.getHeaders().getReceiptId(), e);
+						}
+					} else {
+						logger.warn("Unhandled received RECEIPT: " + frame);
+					}
 				} else if (Command.ERROR.equals(frame.getCommand())) {
 					if (errorListener != null) {
 						try {
@@ -372,6 +383,10 @@ public class StompClient {
 
 	public void setWebSocketCloseListener(WebSocketCloseListener webSocketCloseListener) {
 		this.webSocketCloseListener = webSocketCloseListener;
+	}
+
+	public void setReceiptListener(ReceiptListener receiptListener) {
+		this.receiptListener = receiptListener;
 	}
 }
 

@@ -20,7 +20,11 @@ public class StompHeaders {
 	}
 	
 	public void setAuthorazation(String value) {
-		headers.put("Authorazation", value);
+		headers.put("Authorization", value);
+	}
+	
+	public String getReceiptId() {
+		return headers.get("receipt-id");
 	}
 	
 	public String getMessageId() {
