@@ -2,7 +2,6 @@ package org.adrenalinee.stomp;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 /**
@@ -57,13 +56,14 @@ public class Frame {
 		return new Frame(command, headers, body).toString();
 	}
 	
+	
 	public static Frame unmarshall(String message) {
-		StringTokenizer st = new StringTokenizer(message, LF);
-		Command command = Command.valueOf(st.nextToken());
+		String[] elements = message.split(LF);
+		Command command = Command.valueOf(elements[0]);
 		
 		Map<String, String> headers = new TreeMap<String, String>();
-		while (st.hasMoreTokens()) {
-			String line = st.nextToken();
+		for (int i = 1, limit = elements.length; i < limit; i++) {
+			String line = elements[i];
 			if ("".equals(line.trim())) {
 				break;
 			}
@@ -72,13 +72,41 @@ public class Frame {
 			headers.put(header[0], header[1]);
 		}
 		
-		String body = null;
-		if (st.hasMoreTokens()) {
-			body = st.nextToken();
+		String body = elements[elements.length - 1];
+		if (!(body == null || "".equals(body.trim()))) {
+			body = body.substring(0, body.length() - 1);
 		}
+		System.out.println("body: " + body);
 		
 		return new Frame(command, headers, body);
 	}
+	
+//	public static Frame unmarshall(String message) {
+//		StringTokenizer st = new StringTokenizer(message, LF);
+//		Command command = Command.valueOf(st.nextToken());
+//		
+//		Map<String, String> headers = new TreeMap<String, String>();
+//		while (st.hasMoreTokens()) {
+//			String line = st.nextToken();
+//			System.out.println(line);
+//			if ("".equals(line.trim())) {
+//				break;
+//			}
+//			
+//			String[] header = line.split(":");
+//			headers.put(header[0], header[1]);
+//		}
+//		
+//		String body = null;
+//		if (st.hasMoreTokens()) {
+//			System.out.println("@@@");
+//			body = st.nextToken();
+//		}
+//		
+//		System.out.println("body: " + body);
+//		
+//		return new Frame(command, headers, body);
+//	}
 	
 	
 	public void ack() {
