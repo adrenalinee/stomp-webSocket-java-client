@@ -112,7 +112,7 @@ public class StompClient {
 			
 			//pinger 설정
 			pinger = new Timer();
-			pinger.schedule(new TimerTask() {
+			pinger.scheduleAtFixedRate(new TimerTask() {
 				Logger logger = LoggerFactory.getLogger(getClass());
 				
 				@Override
@@ -120,7 +120,7 @@ public class StompClient {
 					webSocketClient.send(Frame.LF);
 					logger.info(">>> PING");
 				}
-			}, ttl);
+			}, ttl, ttl);
 		}
 		
 		
@@ -130,7 +130,7 @@ public class StompClient {
 			
 			//ponger 설정
 			ponger = new Timer();
-			ponger.schedule(new TimerTask() {
+			ponger.scheduleAtFixedRate(new TimerTask() {
 				Logger logger = LoggerFactory.getLogger(getClass());
 				
 				@Override
@@ -142,7 +142,7 @@ public class StompClient {
 						webSocketClient.close();
 					}
 				}
-			}, ttl);
+			}, ttl, ttl);
 		}
 	}
 	
