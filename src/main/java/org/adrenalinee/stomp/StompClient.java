@@ -84,7 +84,7 @@ public class StompClient {
 	
 	private void transmit(Command command, Map<String, String> headers, String body) {
 		String out = Frame.marshall(command, headers, body);
-		logger.info(">>> {}", out);
+		logger.debug(">>> {}", out);
 		while (true) {
 			if (out.length() > maxWebSocketFrameSize) {
 				webSocketClient.send(out.substring(0, maxWebSocketFrameSize));
@@ -118,7 +118,7 @@ public class StompClient {
 				@Override
 				public void run() {
 					webSocketClient.send(Frame.LF);
-					logger.info(">>> PING");
+					logger.debug(">>> PING");
 				}
 			}, ttl, ttl);
 		}
@@ -156,7 +156,7 @@ public class StompClient {
 			
 			@Override
 			public void onOpen(ServerHandshake handshakedata) {
-				logger.info("Web Socket Openned...");
+				logger.debug("Web Socket Openned...");
 				
 				Map<String, String> messageHeader = new TreeMap<String, String>();
 				messageHeader.put("accept-version", "1.1,1.0");
@@ -166,7 +166,7 @@ public class StompClient {
 			
 			@Override
 			public void onMessage(String message) {
-				logger.info("<<< {}", message);
+				logger.debug("<<< {}", message);
 				
 				Frame frame = Frame.unmarshall(message);
 				if (Command.CONNECTED.equals(frame.getCommand())) {
@@ -185,7 +185,7 @@ public class StompClient {
 				} else if (Command.MESSAGE.equals(frame.getCommand())) {
 					serverActivity = System.currentTimeMillis();
 					if (Frame.LF.equals(message)) {
-						logger.info("<<< PONG");
+						logger.debug("<<< PONG");
 						return;
 					}
 					
@@ -261,7 +261,7 @@ public class StompClient {
 			}
 		};
 		
-		logger.info("Opening Web Socket... url: {}" + url);
+		logger.debug("Opening Web Socket... url: {}" + url);
 		webSocketClient.connect();
 	}
 	
