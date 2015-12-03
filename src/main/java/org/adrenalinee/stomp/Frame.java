@@ -76,7 +76,7 @@ public class Frame {
 		if (!(body == null || "".equals(body.trim()))) {
 			body = body.substring(0, body.length() - 1);
 		}
-		System.out.println("body: " + body);
+//		System.out.println("body: " + body);
 		
 		return new Frame(command, headers, body);
 	}

@@ -9,5 +9,5 @@ import org.adrenalinee.stomp.Frame;
  */
 public interface ReceiptListener {
 	
-	void onReceipt(Frame frame);
+	void onReceived(Frame frame);
 }

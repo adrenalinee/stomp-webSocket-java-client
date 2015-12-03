@@ -37,13 +37,15 @@ public class StompClient {
 	
 	private Map<String, Subscription> subscriptions = new LinkedHashMap<String, Subscription>();
 	
+	private Map<String, Receipt> receipts = new LinkedHashMap<String, Receipt>();
+	
 	private int subscriptionCount;
 	
 	private int transactionCount;
 	
-	private Connection connection;
+	private int receiptCount;
 	
-	private DisconnectListener disconnectListener;
+	private Connection connection;
 	
 	private boolean connected;
 	
@@ -55,9 +57,11 @@ public class StompClient {
 	
 	private long serverActivity;
 	
+	private DisconnectListener disconnectListener;
+	
 	private ErrorListener errorListener;
 	
-	private ReceiptListener receiptListener;
+	private ReceiptListener globalReceiptListener;
 	
 	private WebScoketErrorListener webScoketErrorListener;
 	
@@ -83,6 +87,13 @@ public class StompClient {
 	}
 	
 	private void transmit(Command command, Map<String, String> headers, String body) {
+		if (!connected) {
+			if (!Command.CONNECT.equals(command)) {
+				logger.warn("not connected yet...");
+				return;
+			}
+		}
+		
 		String out = Frame.marshall(command, headers, body);
 		logger.debug(">>> {}", out);
 		while (true) {
@@ -194,7 +205,7 @@ public class StompClient {
 					SubscribeListener subscriptionListener = subscriptions.get(subscription).getListener();
 					if (connectedLintener != null) {
 						try {
-							subscriptionListener.onMessage(frame);
+							subscriptionListener.onReceived(frame);
 						} catch (Exception e) {
 							logger.error("onMessage error subscrition id: " + subscription, e);
 						}
@@ -202,21 +213,37 @@ public class StompClient {
 						logger.warn("Unhandled received MESSAGE: " + frame);
 					}
 				} else if (Command.RECEIPT.equals(frame.getCommand())) {
-					if (receiptListener != null) {
-						try {
-							receiptListener.onReceipt(frame);
-						}catch (Exception e) {
-							logger.error("onReceipt error receitp id: " + frame.getHeaders().getReceiptId(), e);
+					String receiptId = frame.getHeaders().getReceiptId();
+					Receipt receipt = receipts.remove(receiptId);
+					if (receipt != null) {
+						ReceiptListener receiptListener = receipt.getReceiptListener();
+						if (receiptListener != null) {
+							try {
+								receiptListener.onReceived(frame);
+							} catch (Exception e) {
+								logger.error("receiptListener.onReceipt error. receipt id: " + receiptId, e);
+							}
+						} else {
+							logger.warn("Unhandled received RECEIPT: " + frame);
 						}
 					} else {
-						logger.warn("Unhandled received RECEIPT: " + frame);
+						//global receipt listener
+						if (globalReceiptListener != null) {
+							try {
+								globalReceiptListener.onReceived(frame);
+							} catch (Exception e) {
+								logger.error("globalReceiptListener.onReceipt error. receipt id: " + receiptId, e);
+							}
+						} else {
+							logger.warn("Unhandled received RECEIPT: " + frame);
+						}
 					}
 				} else if (Command.ERROR.equals(frame.getCommand())) {
 					if (errorListener != null) {
 						try {
 							errorListener.onError(frame);
 						} catch(Exception e) {
-							logger.error("onErrorCallback error frame: " + frame, e);
+							logger.error("onErrorCallback error. frame: " + frame, e);
 						}
 					} else {
 						logger.warn("Unhandled received ERROR: " + frame);
@@ -230,18 +257,27 @@ public class StompClient {
 			public void onClose(int code, String reason, boolean remote) {
 				logger.warn("Whoops! Lost connection to "  + connection.getUrl());
 				
-				cleanUp();
 				if (webSocketCloseListener != null) {
 					try {
 						webSocketCloseListener.onClose(code, reason, remote);
 					} catch (Exception e) {
-						logger.error("webSocketCloseListener.onClose() code: " + code +
+						logger.error("webSocketCloseListener.onClose() error. code: " + code +
 								", reason: " + reason +
 								", remote: " + remote,
 								e);
 					}
 				} else {
 					logger.warn("Unhandled onClose event. code: {}, reason: {}, remote: {}", code, reason, remote);
+				}
+				
+				
+				cleanUp();
+				if (disconnectListener != null) {
+					try {
+						disconnectListener.onDisconnect();
+					} catch (Exception e) {
+						logger.error("disconnectListener.onDisconnect() error.", e);
+					}
 				}
 			}
 			
@@ -252,7 +288,7 @@ public class StompClient {
 					try {
 						webScoketErrorListener.onError(ex);
 					} catch (Exception e) {
-						logger.error("webScoketErrorListener.onError() ex: " + ex,
+						logger.error("webScoketErrorListener.onError() error. ex: " + ex,
 								e);
 					}
 				} else {
@@ -265,11 +301,53 @@ public class StompClient {
 		webSocketClient.connect();
 	}
 	
-	public void disconnect(DisconnectListener listener) {
-		this.disconnectListener = listener;
+	
+	public void disconnect(final DisconnectListener disconnectListener) {
 		transmit(Command.DISCONNECT, null, null);
-		webSocketClient.close();
+		
+		cleanUp();
+		if (disconnectListener != null) {
+			try {
+				disconnectListener.onDisconnect();
+			} catch (Exception e) {
+				logger.error("disconnectListener.onDisconnect() error.", e);
+			}
+		}
 	}
+	
+	
+//	public void disconnect(final DisconnectListener disconnectListener) {
+//		this.disconnectListener =  disconnectListener;
+//		
+//		Receipt receipt = new Receipt();
+//		receipt.setReceiptId("receipt-" + receiptCount++);
+//		receipt.setReceiptListener(new ReceiptListener() {
+//			
+//			@Override
+//			public void onReceived(Frame frame) {
+//				webSocketClient.close();
+//				
+////				cleanUp();
+////				if (disconnectListener != null) {
+////					try {
+////						disconnectListener.onDisconnect();
+////					} catch (Exception e) {
+////						logger.error("disconnectListener.onDisconnect() error.", e);
+////					}
+////				}
+//			}
+//		});
+//		receipts.put(receipt.getReceiptId(), receipt);
+//		
+//		disconnect(receipt);
+//	}
+//	
+//	private void disconnect(Receipt receipt) {
+//		Map<String, String> headers = new TreeMap<String, String>();
+//		headers.put("receipt", receipt.getReceiptId());
+//		
+//		transmit(Command.DISCONNECT, headers, null);
+//	}
 	
 	private void cleanUp() {
 		if (pinger != null) {
@@ -278,8 +356,22 @@ public class StompClient {
 		if (ponger != null) {
 			ponger.cancel();
 		}
+		
 		disconnectListener = null;
+		errorListener = null;
+		webScoketErrorListener = null;
+		webSocketCloseListener = null;
+		
+		subscriptions.clear();
+		receipts.clear();
+		
+		serverActivity = 0;
+		subscriptionCount = 0;
+		receiptCount = 0;
+		transactionCount = 0;
+		
 		connected = false;
+
 	}
 	
 	public void send(String destination, String body) {
@@ -381,13 +473,34 @@ public class StompClient {
 		this.webScoketErrorListener = webScoketErrorListener;
 	}
 
+	public WebScoketErrorListener getWebScoketErrorListener() {
+		return webScoketErrorListener;
+	}
+	
 	public void setWebSocketCloseListener(WebSocketCloseListener webSocketCloseListener) {
 		this.webSocketCloseListener = webSocketCloseListener;
 	}
 
-	public void setReceiptListener(ReceiptListener receiptListener) {
-		this.receiptListener = receiptListener;
+	public WebSocketCloseListener getWebSocketCloseListener() {
+		return webSocketCloseListener;
 	}
+
+	public void setGlobalReceiptListener(ReceiptListener receiptListener) {
+		this.globalReceiptListener = receiptListener;
+	}
+
+	public ReceiptListener getGlobalReceiptListener() {
+		return globalReceiptListener;
+	}
+
+	public ErrorListener getErrorListener() {
+		return errorListener;
+	}
+
+	public void setErrorListener(ErrorListener errorListener) {
+		this.errorListener = errorListener;
+	}
+
 }
 
 /**
