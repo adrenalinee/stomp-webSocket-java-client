@@ -89,7 +89,7 @@ public class StompClient {
 	private void transmit(Command command, Map<String, String> headers, String body) {
 		if (!connected) {
 			if (!Command.CONNECT.equals(command)) {
-				logger.warn("not connected yet...");
+				logger.warn("not connected yet... command: {}", command);
 				return;
 			}
 		}
@@ -305,6 +305,7 @@ public class StompClient {
 	public void disconnect(final DisconnectListener disconnectListener) {
 		transmit(Command.DISCONNECT, null, null);
 		
+		webSocketClient.close();
 		cleanUp();
 		if (disconnectListener != null) {
 			try {
