@@ -7,6 +7,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import org.adrenalinee.stomp.listener.ConnectedListnener;
 import org.adrenalinee.stomp.listener.DisconnectListener;
 import org.adrenalinee.stomp.listener.ErrorListener;
@@ -14,6 +21,8 @@ import org.adrenalinee.stomp.listener.ReceiptListener;
 import org.adrenalinee.stomp.listener.SubscribeListener;
 import org.adrenalinee.stomp.listener.WebScoketErrorListener;
 import org.adrenalinee.stomp.listener.WebSocketCloseListener;
+import org.java_websocket.WebSocketImpl;
+import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
@@ -163,6 +172,8 @@ public class StompClient {
 		final Map<String, String> headers = connection.getHeaders();
 		final int connecttimeout =  connection.getConnecttimeout();
 		
+//		WebSocketImpl.DEBUG = true;
+		
 		webSocketClient = new WebSocketClient(URI.create(url), new Draft_17(), headers, connecttimeout) {
 			
 			@Override
@@ -297,6 +308,12 @@ public class StompClient {
 			}
 		};
 		
+		if (url != null) {
+			if (url.startsWith("wss")) {
+				webSocketClient.setWebSocketFactory(new DefaultSSLWebSocketClientFactory(createSSLContext()));
+			}
+		}
+		
 		logger.debug("Opening Web Socket... url: {}" + url);
 		webSocketClient.connect();
 	}
@@ -314,6 +331,36 @@ public class StompClient {
 				logger.error("disconnectListener.onDisconnect() error.", e);
 			}
 		}
+	}
+	
+	
+	private SSLContext createSSLContext() {
+		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+			public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
+
+			public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+			}
+
+			public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+			}
+		} };
+
+		try {
+			SSLContext sc = SSLContext.getInstance("SSL");
+			sc.init(null, trustAllCerts, new java.security.SecureRandom());
+			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			});
+			return sc;
+		} catch (Exception e) {
+			logger.error("에러 발생", e);
+		}
+		return null;
 	}
 	
 	
