@@ -21,7 +21,6 @@ import org.adrenalinee.stomp.listener.ReceiptListener;
 import org.adrenalinee.stomp.listener.SubscribeListener;
 import org.adrenalinee.stomp.listener.WebScoketErrorListener;
 import org.adrenalinee.stomp.listener.WebSocketCloseListener;
-import org.java_websocket.WebSocketImpl;
 import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
