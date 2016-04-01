@@ -127,7 +127,7 @@ public class StompClient {
 		
 		if (!(heartbeat.getOutgoing() == 0 || serverIncoming == 0)) {
 			int ttl = Math.max(heartbeat.getOutgoing(), serverIncoming);
-			logger.debug("send PING every " + ttl + "ms");
+			logger.debug("send PING every {}ms", ttl);
 			
 			//pinger 설정
 			pinger = new Timer();
@@ -145,7 +145,7 @@ public class StompClient {
 		
 		if (!(heartbeat.getIncoming() == 0 || serverOutgoing == 0)) {
 			final int ttl = Math.max(heartbeat.getIncoming(), serverOutgoing);
-			logger.debug("check PONG every " + ttl + "ms");
+			logger.debug("check PONG every {}ms", ttl);
 			
 			//ponger 설정
 			ponger = new Timer();
@@ -156,7 +156,7 @@ public class StompClient {
 				public void run() {
 					long delta = System.currentTimeMillis() - serverActivity;
 					if (delta > ttl * 2) {
-						logger.warn("did not receive server activity for the last " + delta + "ms");
+						logger.warn("did not receive server activity for the last {}ms", delta);
 						
 						webSocketClient.close();
 					}
@@ -201,7 +201,7 @@ public class StompClient {
 							logger.error("onConnected error url: " + url, e);
 						}
 					} else {
-						logger.warn("Unhandled received CONNECTED: " + frame);
+						logger.warn("Unhandled received CONNECTED: {}", frame);
 					}
 				} else if (Command.MESSAGE.equals(frame.getCommand())) {
 					serverActivity = System.currentTimeMillis();
@@ -220,7 +220,7 @@ public class StompClient {
 							logger.error("onMessage error subscrition id: " + subscription, e);
 						}
 					} else {
-						logger.warn("Unhandled received MESSAGE: " + frame);
+						logger.warn("Unhandled received MESSAGE: {}", frame);
 					}
 				} else if (Command.RECEIPT.equals(frame.getCommand())) {
 					String receiptId = frame.getHeaders().getReceiptId();
@@ -245,7 +245,7 @@ public class StompClient {
 								logger.error("globalReceiptListener.onReceipt error. receipt id: " + receiptId, e);
 							}
 						} else {
-							logger.warn("Unhandled received RECEIPT: " + frame);
+							logger.warn("Unhandled received RECEIPT: {}", frame);
 						}
 					}
 				} else if (Command.ERROR.equals(frame.getCommand())) {
@@ -256,16 +256,16 @@ public class StompClient {
 							logger.error("onErrorCallback error. frame: " + frame, e);
 						}
 					} else {
-						logger.warn("Unhandled received ERROR: " + frame);
+						logger.warn("Unhandled received ERROR: {}", frame);
 					}
 				} else {
-					logger.warn("Unhandled frame: " + frame);
+					logger.warn("Unhandled frame: {}", frame);
 				}
 			}
 			
 			@Override
 			public void onClose(int code, String reason, boolean remote) {
-				logger.warn("Whoops! Lost connection to "  + connection.getUrl());
+				logger.warn("Whoops! Lost connection to {}", connection.getUrl());
 				
 				if (webSocketCloseListener != null) {
 					try {
@@ -298,22 +298,22 @@ public class StompClient {
 					try {
 						webScoketErrorListener.onError(ex);
 					} catch (Exception e) {
-						logger.error("webScoketErrorListener.onError() error. ex: " + ex,
-								e);
+						logger.error("webScoketErrorListener.onError() error.", e);
 					}
 				} else {
-					logger.warn("Unhandled onError event. ex: " + ex.getClass().getName(), ex);
+					logger.warn("Unhandled onError event.", ex);
 				}
 			}
 		};
 		
 		if (url != null) {
 			if (url.startsWith("wss")) {
+				//TODO SSL 처리를 제대로 할 수 있는 방법 필요함. 현재는 우회 하는 방법으로 생각됨..
 				webSocketClient.setWebSocketFactory(new DefaultSSLWebSocketClientFactory(createSSLContext()));
 			}
 		}
 		
-		logger.debug("Opening Web Socket... url: {}" + url);
+		logger.debug("Opening Web Socket... url: {}", url);
 		webSocketClient.connect();
 	}
 	
