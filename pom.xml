@@ -18,11 +18,11 @@
 	</build>
 
 	<dependencies>
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.hi3project.vineyard.comm</groupId>
 			<artifactId>gozirra-ws</artifactId>
 			<version>0.5.0</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.java-websocket</groupId>
 			<artifactId>Java-WebSocket</artifactId>

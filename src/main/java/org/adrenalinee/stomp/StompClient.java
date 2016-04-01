@@ -302,7 +302,7 @@ public class StompClient {
 								e);
 					}
 				} else {
-					logger.warn("Unhandled onError event. ex: {}", ex);
+					logger.warn("Unhandled onError event. ex: " + ex.getClass().getName(), ex);
 				}
 			}
 		};
