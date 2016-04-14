@@ -1,6 +1,7 @@
 package org.adrenalinee.stomp;
 
 import java.net.URI;
+import java.nio.channels.NotYetConnectedException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -89,6 +90,10 @@ public class StompClient {
 	}
 	
 	public static StompClient clientOverWebsocket(String url, HttpHeaders httpHeaders) {
+		if (httpHeaders == null) {
+			httpHeaders = new HttpHeaders();
+		}
+		
 		StompClient stompClient = new StompClient();
 		stompClient.connection = new Connection(url, httpHeaders.getHeaders());
 		return stompClient;
@@ -132,12 +137,16 @@ public class StompClient {
 			//pinger 설정
 			pinger = new Timer();
 			pinger.scheduleAtFixedRate(new TimerTask() {
-				Logger logger = LoggerFactory.getLogger(getClass());
+//				Logger logger = LoggerFactory.getLogger(getClass());
 				
 				@Override
 				public void run() {
-					webSocketClient.send(Frame.LF);
-					logger.debug(">>> PING");
+					try {
+						webSocketClient.send(Frame.LF);
+						logger.debug(">>> PING");
+					} catch (NotYetConnectedException e) {
+						logger.error("ping send fail. not yet connected.");
+					}
 				}
 			}, ttl, ttl);
 		}
@@ -150,7 +159,7 @@ public class StompClient {
 			//ponger 설정
 			ponger = new Timer();
 			ponger.scheduleAtFixedRate(new TimerTask() {
-				Logger logger = LoggerFactory.getLogger(getClass());
+//				Logger logger = LoggerFactory.getLogger(getClass());
 				
 				@Override
 				public void run() {
@@ -187,6 +196,12 @@ public class StompClient {
 			
 			@Override
 			public void onMessage(String message) {
+				serverActivity = System.currentTimeMillis();
+				if (Frame.LF.equals(message)) {
+					logger.debug("<<< PONG");
+					return;
+				}
+				
 				logger.debug("<<< {}", message);
 				
 				Frame frame = Frame.unmarshall(message);
@@ -204,11 +219,11 @@ public class StompClient {
 						logger.warn("Unhandled received CONNECTED: {}", frame);
 					}
 				} else if (Command.MESSAGE.equals(frame.getCommand())) {
-					serverActivity = System.currentTimeMillis();
-					if (Frame.LF.equals(message)) {
-						logger.debug("<<< PONG");
-						return;
-					}
+//					serverActivity = System.currentTimeMillis();
+//					if (Frame.LF.equals(message)) {
+//						logger.debug("<<< PONG");
+//						return;
+//					}
 					
 					String subscription = frame.getHeaders().getSubscription();
 					frame.setStompClient(StompClient.this);
