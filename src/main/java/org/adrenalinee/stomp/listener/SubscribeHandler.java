@@ -7,7 +7,7 @@ import org.adrenalinee.stomp.StompHeaders;
  * @author 신동성
  * @since 2015. 11. 6.
  */
-public interface ConnectedListnener {
+public interface SubscribeHandler {
 	
-	void onConnected(StompHeaders stompHeaders);
+	void onReceived(final Object payload, StompHeaders stompHeaders);
 }

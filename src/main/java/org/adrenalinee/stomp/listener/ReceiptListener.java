@@ -1,6 +1,6 @@
 package org.adrenalinee.stomp.listener;
 
-import org.adrenalinee.stomp.Frame;
+import org.adrenalinee.stomp.frame.Frame;
 
 /**
  * 

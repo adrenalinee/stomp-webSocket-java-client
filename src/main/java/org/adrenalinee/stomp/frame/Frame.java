@@ -1,7 +1,12 @@
-package org.adrenalinee.stomp;
+package org.adrenalinee.stomp.frame;
 
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.adrenalinee.stomp.Command;
+import org.adrenalinee.stomp.StompClient;
+import org.adrenalinee.stomp.StompHeaders;
+
 import java.util.TreeMap;
 
 /**
@@ -147,12 +152,12 @@ public class Frame {
 	public String getBody() {
 		return body;
 	}
-
+	
 	public void setBody(String body) {
 		this.body = body;
 	}
 
-	void setStompClient(StompClient stompClient) {
+	public void setStompClient(StompClient stompClient) {
 		this.stompClient = stompClient;
 	}
 

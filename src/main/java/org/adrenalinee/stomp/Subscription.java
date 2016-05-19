@@ -1,6 +1,7 @@
 package org.adrenalinee.stomp;
 
-import org.adrenalinee.stomp.listener.SubscribeListener;
+import org.adrenalinee.stomp.listener.SubscribeHandler;
+import org.adrenalinee.stomp.listener.SubscribeHandlerWithoutPayload;
 
 /**
  * 
@@ -13,7 +14,11 @@ public class Subscription {
 	
 	private String destination;
 	
-	SubscribeListener listener;
+	Class<?> targetClass;
+	
+	SubscribeHandler listener;
+	
+	SubscribeHandlerWithoutPayload listenerWithoutPayload;
 
 	public String getId() {
 		return id;
@@ -31,12 +36,28 @@ public class Subscription {
 		this.destination = destination;
 	}
 
-	public SubscribeListener getListener() {
+	public SubscribeHandler getListener() {
 		return listener;
 	}
 
-	public void setListener(SubscribeListener listener) {
+	public void setListener(SubscribeHandler listener) {
 		this.listener = listener;
+	}
+
+	public Class<?> getTargetClass() {
+		return targetClass;
+	}
+
+	public void setTargetClass(Class<?> targetClass) {
+		this.targetClass = targetClass;
+	}
+
+	public SubscribeHandlerWithoutPayload getListenerWithoutPayload() {
+		return listenerWithoutPayload;
+	}
+
+	public void setListenerWithoutPayload(SubscribeHandlerWithoutPayload listenerWithoutPayload) {
+		this.listenerWithoutPayload = listenerWithoutPayload;
 	}
 	
 	
