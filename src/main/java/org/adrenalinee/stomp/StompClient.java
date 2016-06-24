@@ -160,7 +160,7 @@ public class StompClient {
 				public void run() {
 					try {
 						websocketClient.send(Frame.LF);
-						logger.debug(">>> PING");
+						logger.trace(">>> PING");
 					} catch (NotYetConnectedException e) {
 						logger.error("ping send fail. not yet connected.");
 					}
@@ -241,7 +241,7 @@ public class StompClient {
 			public void onMessage(String message) {
 				serverActivity = System.currentTimeMillis();
 				if (Frame.LF.equals(message)) {
-					logger.debug("<<< PONG");
+					logger.trace("<<< PONG");
 					return;
 				}
 				
