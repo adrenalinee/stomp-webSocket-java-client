@@ -26,7 +26,11 @@ public class GsonFrameBodyConverter implements FrameBodyConverter {
 	
 	@Override
 	public Object fromFrame(String body, Class<?> targetClass) {
-		if (body == null || "".equals(body) || targetClass == null) {
+		if (body == null) {
+			return null;
+		}
+		
+		if ("".equals(body.trim()) || targetClass == null) {
 			return null;
 		}
 		return gson.fromJson(body, targetClass);

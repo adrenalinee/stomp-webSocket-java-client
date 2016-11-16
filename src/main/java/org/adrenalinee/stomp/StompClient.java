@@ -11,6 +11,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import org.adrenalinee.stomp.frame.Frame;
 import org.adrenalinee.stomp.frame.FrameBodyConverter;
 import org.adrenalinee.stomp.frame.GsonFrameBodyConverter;
@@ -24,6 +31,7 @@ import org.adrenalinee.stomp.listener.WebScoketErrorListener;
 import org.adrenalinee.stomp.listener.WebSocketCloseListener;
 import org.adrenalinee.stomp.websocketClient.DefaultWebsocketClient;
 import org.adrenalinee.stomp.websocketClient.WebsocketEventHandler;
+import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.drafts.Draft_17;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,12 +219,12 @@ public class StompClient {
 		websocketClient.setWebsocketEventHandler(createEventHandler(connectedLintener));
 		
 		
-//		if (url != null) {
-//			if (url.startsWith("wss")) {
-//				//TODO SSL 처리를 제대로 할 수 있는 방법 필요함. 현재는 우회 하는 방법으로 생각됨..
-//				websocketClient.setWebSocketFactory(new DefaultSSLWebSocketClientFactory(createSSLContext()));
-//			}
-//		}
+		if (url != null) {
+			if (url.startsWith("wss")) {
+				//TODO SSL 처리를 제대로 할 수 있는 방법 필요함. 현재는 우회 하는 방법으로 생각됨..
+				websocketClient.setWebSocketFactory(new DefaultSSLWebSocketClientFactory(createSSLContext()));
+			}
+		}
 		
 		logger.debug("Opening Web Socket... url: {}", url);
 		websocketClient.connect();
@@ -269,30 +277,33 @@ public class StompClient {
 //						return;
 //					}
 					
-					String subscription = frame.getHeaders().getSubscription();
+					String subscriptionId = frame.getHeaders().getSubscription();
 					frame.setStompClient(StompClient.this);
-					SubscribeHandler subscriptionListener = subscriptions.get(subscription).getListener();
-					SubscribeHandlerWithoutPayload subscribeHandlerWithoutPayload = subscriptions.get(subscription).getListenerWithoutPayload();
-					if (subscriptionListener != null) {
-						Class<?> targetClass = subscriptions.get(subscription).getTargetClass();
-						Object body = frameConverter.fromFrame(frame.getBody(), targetClass);
-						
-						try {
-							subscriptionListener.onReceived(body, frame.getHeaders());
-						} catch (Exception e) {
-							logger.error("onMessage error subscrition id: " + subscription, e);
-						}
-					} else if (subscribeHandlerWithoutPayload != null) {
-						try {
-							subscribeHandlerWithoutPayload.onReceived(frame.getHeaders());
-						} catch (Exception e) {
-							logger.error("onMessage error subscrition id: " + subscription, e);
+					Subscription subscription = subscriptions.get(subscriptionId);
+					if (subscription != null) {
+						SubscribeHandler subscriptionListener = subscription.getListener();
+						SubscribeHandlerWithoutPayload subscribeHandlerWithoutPayload = subscription.getListenerWithoutPayload();
+						if (subscriptionListener != null) {
+							Class<?> targetClass = subscription.getTargetClass();
+							Object body = frameConverter.fromFrame(frame.getBody(), targetClass);
+							
+							try {
+								subscriptionListener.onReceived(body, frame.getHeaders());
+							} catch (Exception e) {
+								logger.error("onMessage error subscrition id: " + subscriptionId, e);
+							}
+						} else if (subscribeHandlerWithoutPayload != null) {
+							try {
+								subscribeHandlerWithoutPayload.onReceived(frame.getHeaders());
+							} catch (Exception e) {
+								logger.error("onMessage error subscrition id: " + subscriptionId, e);
+							}
+						} else {
+							logger.warn("Unhandled received MESSAGE: {}", frame);
 						}
 					} else {
-						logger.warn("Unhandled received MESSAGE: {}", frame);
+						logger.warn("subscription id not found. subscrition id: {}", subscriptionId);
 					}
-					
-					
 				} else if (Command.RECEIPT.equals(frame.getCommand())) {
 					String receiptId = frame.getHeaders().getReceiptId();
 					Receipt receipt = receipts.remove(receiptId);
@@ -399,34 +410,34 @@ public class StompClient {
 	}
 	
 	
-//	private SSLContext createSSLContext() {
-//		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
-//			public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-//				return null;
-//			}
-//
-//			public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-//			}
-//
-//			public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
-//			}
-//		} };
-//
-//		try {
-//			SSLContext sc = SSLContext.getInstance("SSL");
-//			sc.init(null, trustAllCerts, new java.security.SecureRandom());
-//			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-//			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
-//				public boolean verify(String hostname, SSLSession session) {
-//					return true;
-//				}
-//			});
-//			return sc;
-//		} catch (Exception e) {
-//			logger.error("에러 발생", e);
-//		}
-//		return null;
-//	}
+	private SSLContext createSSLContext() {
+		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+			public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+				return null;
+			}
+
+			public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+			}
+
+			public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+			}
+		} };
+
+		try {
+			SSLContext sc = SSLContext.getInstance("SSL");
+			sc.init(null, trustAllCerts, new java.security.SecureRandom());
+			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			});
+			return sc;
+		} catch (Exception e) {
+			logger.error("에러 발생", e);
+		}
+		return null;
+	}
 	
 	
 //	public void disconnect(final DisconnectListener disconnectListener) {
